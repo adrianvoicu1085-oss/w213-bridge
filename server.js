@@ -167,6 +167,15 @@ app.post('/api/climate', (req, res) => {
   apiResponse(res, sent, sent ? (payload.on ? 'Climatizare pornita' : 'Climatizare oprita') : 'Comanda in asteptare');
 });
 
+// POST /api/learn
+app.post('/api/learn', (req, res) => {
+  const { action } = req.body || {};
+  if (!action) return res.status(400).json({ status: 'error', message: 'Action lipsa' });
+  const sent = sendToESP32({ action: 'learn_' + action });
+  const hints = { lock: 'Apasa LOCK pe cheie in 5 secunde!', unlock: 'Apasa UNLOCK pe cheie in 5 secunde!', engine_start: 'Porneste motorul in 5 secunde!', engine_stop: 'Opreste motorul in 5 secunde!', climate: 'Regleaza clima in 5 secunde!' };
+  res.json({ status: 'ok', message: hints[action] || 'Fa actiunea in 5 secunde!', delivered: sent });
+});
+
 // GET /api/sniff – ultimele mesaje CAN
 app.get('/api/sniff', (req, res) => {
   const sent = sendToESP32({ action: 'sniff' });
