@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="W213"/>
+  <title>Mercedes W213</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg:        #080b10;
+      --surface:   #0d1117;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #c8a96e;
+      --accent2:   #e8c98e;
+      --red:       #e05252;
+      --green:     #52c078;
+      --blue:      #5294e0;
+      --text:      #e8e8e8;
+      --muted:     #5a6070;
+      --safe-top:  env(safe-area-inset-top, 44px);
+      --safe-bot:  env(safe-area-inset-bottom, 20px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: flex; flex-direction: column;
+      height: 100vh; height: 100dvh;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bot);
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-size: 11px; letter-spacing: 0.35em; color: var(--accent);
+      font-weight: 600; text-transform: uppercase;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+    .status-dot.connected {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+    .status-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+    /* ── Scroll area ── */
+    .scroll {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 20px 20px 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── IP Config ── */
+    .ip-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+    }
+    .ip-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; white-space: nowrap; }
+    .ip-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--accent); font-family: 'Share Tech Mono', monospace;
+      font-size: 13px; min-width: 0;
+    }
+    .ip-save {
+      background: var(--accent); color: #000; border: none;
+      padding: 5px 12px; border-radius: 6px;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      font-size: 12px; letter-spacing: 0.05em; cursor: pointer;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 10px; letter-spacing: 0.3em; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 12px; padding-left: 2px;
+    }
+
+    /* ── Engine card ── */
+    .engine-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .engine-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .engine-card.running::before { opacity: 1; }
+
+    .engine-status {
+      text-align: center; margin-bottom: 28px;
+    }
+    .engine-ring {
+      width: 100px; height: 100px; margin: 0 auto 12px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      transition: border-color 0.5s, box-shadow 0.5s;
+    }
+    .engine-ring.running {
+      border-color: var(--green);
+      box-shadow: 0 0 30px rgba(82,192,120,0.25), inset 0 0 20px rgba(82,192,120,0.1);
+      animation: pulse-ring 2s ease-in-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%,100% { box-shadow: 0 0 20px rgba(82,192,120,0.2), inset 0 0 15px rgba(82,192,120,0.05); }
+      50%      { box-shadow: 0 0 40px rgba(82,192,120,0.4), inset 0 0 25px rgba(82,192,120,0.15); }
+    }
+    .engine-icon { font-size: 36px; }
+    .engine-label {
+      font-size: 12px; letter-spacing: 0.25em; color: var(--muted);
+      text-transform: uppercase;
+    }
+    .engine-label.running { color: var(--green); }
+
+    .engine-buttons { display: flex; gap: 12px; }
+
+    .btn-engine {
+      flex: 1; padding: 16px 8px;
+      border-radius: 12px; border: 1px solid var(--border);
+      font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      font-size: 16px; letter-spacing: 0.1em;
+      cursor: pointer; transition: all 0.2s;
+      background: transparent; color: var(--text);
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .btn-engine span.icon { font-size: 22px; }
+    .btn-engine span.lbl { font-size: 11px; letter-spacing: 0.2em; }
+
+    .btn-start {
+      border-color: rgba(82,192,120,0.3);
+      color: var(--green);
+    }
+    .btn-start:active {
+      background: rgba(82,192,120,0.1);
+      transform: scale(0.97);
+    }
+    .btn-stop {
+      border-color: rgba(224,82,82,0.3);
+      color: var(--red);
+    }
+    .btn-stop:active {
+      background: rgba(224,82,82,0.1);
+      transform: scale(0.97);
+    }
+    .btn-engine:disabled { opacity: 0.35; pointer-events: none; }
+
+    /* ── Climate card ── */
+    .climate-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .climate-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .climate-title { font-size: 18px; font-weight: 600; letter-spacing: 0.05em; }
+
+    /* Toggle switch */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; }
+    .toggle {
+      width: 48px; height: 26px;
+      background: var(--border);
+      border-radius: 13px;
+      position: relative; cursor: pointer;
+      transition: background 0.3s;
+      border: none; padding: 0;
+    }
+    .toggle.active { background: var(--blue); }
+    .toggle::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #fff;
+      transition: transform 0.3s;
+    }
+    .toggle.active::after { transform: translateX(22px); }
+
+    /* Temperature */
+    .temp-section { margin-bottom: 20px; }
+    .temp-display {
+      text-align: center; margin-bottom: 16px;
+    }
+    .temp-value {
+      font-size: 56px; font-weight: 300; line-height: 1;
+      color: var(--accent2);
+    }
+    .temp-unit { font-size: 20px; color: var(--muted); }
+
+    .temp-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--blue) 0%, var(--accent) 50%, var(--red) 100%);
+      outline: none; cursor: pointer;
+    }
+    .temp-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+    .temp-limits {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--muted); margin-top: 6px;
+      letter-spacing: 0.1em;
+    }
+
+    /* Fan */
+    .fan-section {}
+    .fan-label-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .fan-title { font-size: 12px; letter-spacing: 0.15em; color: var(--muted); }
+    .fan-speed-val { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--accent); }
+
+    .fan-bars {
+      display: flex; gap: 5px; align-items: flex-end; height: 36px;
+    }
+    .fan-bar {
+      flex: 1; border-radius: 3px 3px 0 0;
+      background: var(--border);
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+    }
+    .fan-bar:active { transform: scaleY(0.95); }
+    .fan-bar.active { background: var(--blue); }
+
+    /* ── Toast ── */
+    .toast-wrap {
+      position: fixed; bottom: calc(var(--safe-bot) + 16px);
+      left: 50%; transform: translateX(-50%);
+      z-index: 999; pointer-events: none;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .toast {
+      background: rgba(13,17,23,0.95);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 10px 20px;
+      font-size: 13px; letter-spacing: 0.05em;
+      backdrop-filter: blur(12px);
+      animation: toast-in 0.3s ease, toast-out 0.3s ease 2.2s forwards;
+      white-space: nowrap;
+    }
+    .toast.ok    { border-color: rgba(82,192,120,0.4); color: var(--green); }
+    .toast.err   { border-color: rgba(224,82,82,0.4);  color: var(--red); }
+    .toast.info  { border-color: rgba(82,148,224,0.4); color: var(--blue); }
+    @keyframes toast-in  { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+    @keyframes toast-out { to   { opacity:0; transform: translateY(-8px); } }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-left: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Log ── */
+    .log-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .log-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .log-clear {
+      background: none; border: none; color: var(--muted);
+      font-size: 11px; letter-spacing: 0.1em; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .log-body {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; color: var(--muted);
+      max-height: 120px; overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .log-line { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .log-line.ok  { color: var(--green); }
+    .log-line.err { color: var(--red); }
+  </style>
+
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+
+  <div class="header">
+    <div class="logo">Mercedes · W213</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="status-text" style="font-size:11px;letter-spacing:.1em;color:var(--muted)">DECONECTAT</span>
+      <div class="status-dot" id="dot"></div>
+    </div>
+  </div>
+
+  <div class="scroll">
+
+```
+<!-- IP Config -->
+<div class="ip-bar">
+  <span class="ip-label">RPi IP</span>
+  <input class="ip-input" id="ip-input" type="text"
+         placeholder="https://w213-bridge-production.up.railway.app" autocomplete="off" autocorrect="off"/>
+  <button class="ip-save" onclick="saveIP()">SAVE</button>
+</div>
+
+<!-- Engine -->
+<div class="section-title">Motor</div>
+<div class="engine-card" id="engine-card">
+  <div class="engine-status">
+    <div class="engine-ring" id="engine-ring">
+      <span class="engine-icon">⚙️</span>
+    </div>
+    <div class="engine-label" id="engine-label">OPRIT</div>
+  </div>
+  <div class="engine-buttons">
+    <button class="btn-engine btn-start" id="btn-start" onclick="engineCmd('start')">
+      <span class="icon">▶</span>
+      <span class="lbl">START</span>
+    </button>
+    <button class="btn-engine btn-stop" id="btn-stop" onclick="engineCmd('stop')">
+      <span class="icon">■</span>
+      <span class="lbl">STOP</span>
+    </button>
+  </div>
+</div>
+
+<!-- Climate -->
+<div class="section-title">Climatizare</div>
+<div class="climate-card">
+  <div class="climate-header">
+    <div class="climate-title">❄️ Aer Condiționat</div>
+    <div class="toggle-wrap">
+      <span class="toggle-label" id="ac-label">OFF</span>
+      <button class="toggle" id="ac-toggle" onclick="toggleAC()"></button>
+    </div>
+  </div>
+
+  <!-- Temperature -->
+  <div class="temp-section">
+    <div class="temp-display">
+      <span class="temp-value" id="temp-val">22</span>
+      <span class="temp-unit">°C</span>
+    </div>
+    <input class="temp-slider" id="temp-slider" type="range"
+           min="16" max="30" step="0.5" value="22"
+           oninput="updateTemp(this.value)"
+           onchange="sendClimate()"/>
+    <div class="temp-limits">
+      <span>16°C</span><span>TEMP</span><span>30°C</span>
+    </div>
+  </div>
+
+  <!-- Fan -->
+  <div class="fan-section">
+    <div class="fan-label-row">
+      <span class="fan-title">VENTILATOR</span>
+      <span class="fan-speed-val" id="fan-val">03 / 08</span>
+    </div>
+    <div class="fan-bars" id="fan-bars"></div>
+  </div>
+</div>
+
+<!-- Log -->
+<div class="log-card">
+  <div class="log-header">
+    <span class="section-title" style="margin:0">LOG CAN</span>
+    <button class="log-clear" onclick="clearLog()">STERGE</button>
+  </div>
+  <div class="log-body" id="log"></div>
+</div>
+```
+
+  </div><!-- /scroll -->
+</div><!-- /app -->
+
+<!-- Toasts -->
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+// ─── State ────────────────────────────────────
+let serverIP   = localStorage.getItem('rpi_ip') || 'https://w213-bridge-production.up.railway.app';
+let engineOn   = false;
+let acOn       = false;
+let fanSpeed   = 3;
+let tempC      = 22.0;
+let connected  = false;
+
+// ─── Init ─────────────────────────────────────
+document.getElementById('ip-input').value = serverIP;
+
+// Build fan bars
+const fanBars = document.getElementById('fan-bars');
+for (let i = 1; i <= 8; i++) {
+  const b = document.createElement('div');
+  b.className = 'fan-bar' + (i <= fanSpeed ? ' active' : '');
+  b.style.height = (20 + i * 2) + 'px';
+  b.dataset.v = i;
+  b.onclick = () => { fanSpeed = i; updateFanBars(); sendClimate(); };
+  fanBars.appendChild(b);
+}
+
+// Check server status on load
+setTimeout(checkStatus, 800);
+
+// ─── Helpers ──────────────────────────────────
+function baseURL() { return serverIP.startsWith('http') ? serverIP : `http://${serverIP}:8080`; }
+
+function saveIP() {
+  serverIP = document.getElementById('ip-input').value.trim();
+  localStorage.setItem('rpi_ip', serverIP);
+  toast('IP salvat: ' + serverIP, 'info');
+  checkStatus();
+}
+
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(baseURL() + path, opts);
+  return r.json();
+}
+
+function log(msg, type = '') {
+  const el = document.getElementById('log');
+  const now = new Date().toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = `[${now}] ${msg}`;
+  el.prepend(line);
+  if (el.children.length > 60) el.lastChild.remove();
+}
+
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+function toast(msg, type = 'ok') {
+  const wrap = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function setConnected(ok) {
+  connected = ok;
+  const dot  = document.getElementById('dot');
+  const txt  = document.getElementById('status-text');
+  dot.className = 'status-dot ' + (ok ? 'connected' : 'error');
+  txt.textContent = ok ? 'CONECTAT' : 'DECONECTAT';
+  txt.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+
+// ─── Status check ─────────────────────────────
+async function checkStatus() {
+  try {
+    const d = await api('/api/status');
+    setConnected(d.status === 'ok');
+    log('Server activ – CAN ' + (d.connected ? 'OK' : 'demo mode'), d.connected ? 'ok' : '');
+  } catch {
+    setConnected(false);
+    log('Nu se poate conecta la ' + serverIP, 'err');
+  }
+}
+
+// ─── Engine ───────────────────────────────────
+async function engineCmd(cmd) {
+  if (!connected) { toast('Server neconectat', 'err'); return; }
+  const btn = document.getElementById('btn-' + cmd);
+  btn.disabled = true;
+  try {
+    const d = await api('/api/engine/' + cmd, 'POST');
+    if (d.status === 'ok') {
+      engineOn = cmd === 'start';
+      updateEngineUI();
+      toast(d.message, 'ok');
+      log(d.message, 'ok');
+    } else {
+      toast(d.message, 'err');
+      log(d.message, 'err');
+    }
+  } catch (e) {
+    toast('Eroare conexiune', 'err');
+    log('Eroare: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+}
+
+function updateEngineUI() {
+  const ring  = document.getElementById('engine-ring');
+  const label = document.getElementById('engine-label');
+  const card  = document.getElementById('engine-card');
+  ring.className  = 'engine-ring' + (engineOn ? ' running' : '');
+  label.className = 'engine-label' + (engineOn ? ' running' : '');
+  label.textContent = engineOn ? 'PORNIT' : 'OPRIT';
+  card.className  = 'engine-card' + (engineOn ? ' running' : '');
+}
+
+// ─── Climate ──────────────────────────────────
+function toggleAC() {
+  acOn = !acOn;
+  const tog = document.getElementById('ac-toggle');
+  const lbl = document.getElementById('ac-label');
+  tog.className = 'toggle' + (acOn ? ' active' : '');
+  lbl.textContent = acOn ? 'ON' : 'OFF';
+  sendClimate();
+}
+
+function updateTemp(v) {
+  tempC = parseFloat(v);
+  document.getElementById('temp-val').textContent = Number.isInteger(tempC) ? tempC : tempC.toFixed(1);
+}
+
+function updateFanBars() {
+  document.querySelectorAll('.fan-bar').forEach(b => {
+    b.className = 'fan-bar' + (parseInt(b.dataset.v) <= fanSpeed ? ' active' : '');
+  });
+  document.getElementById('fan-val').textContent =
+    String(fanSpeed).padStart(2,'0') + ' / 08';
+}
+
+let climateTimer = null;
+function sendClimate() {
+  clearTimeout(climateTimer);
+  climateTimer = setTimeout(async () => {
+    if (!connected) return;
+    try {
+      const d = await api('/api/climate', 'POST', { on: acOn, temp: tempC, fan: fanSpeed });
+      log(d.message + ` | ${tempC}°C | fan ${fanSpeed}`, d.status === 'ok' ? 'ok' : 'err');
+      if (d.status === 'ok') toast(d.message, 'ok');
+    } catch (e) {
+      log('Eroare climate: ' + e.message, 'err');
+    }
+  }, 400);
+}
+
+// Initial fan render
+updateFanBars();
+</script>
+
+</body>
+</html>
